@@ -324,7 +324,7 @@
             canvas.width = width; canvas.height = height;
         });
 
-        // --- ПЛЕЕР ---
+        // --- ПЛЕЕР: исправленная обработка воспроизведения ---
         const audio = document.getElementById('audioPlayer');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const trackTitle = document.getElementById('trackTitle');
@@ -334,56 +334,112 @@
         const fileInput = document.getElementById('fileInput');
         const trackInfoClickable = document.getElementById('trackInfoClickable');
 
-        // 1. КЛИК ПО ТЕКСТУ -> ВЫБОР ФАЙЛА ВРУЧНУЮ
-        trackInfoClickable.addEventListener('click', () => {
-            fileInput.click();
+        let isMuted = false;
+        let localObjectUrl = null;
+
+        audio.volume = Number(volumeSlider.value);
+
+        function setPlayButton(isPlaying) {
+            playPauseBtn.innerHTML = isPlaying
+                ? '<i class="fas fa-pause"></i>'
+                : '<i class="fas fa-play"></i>';
+            playPauseBtn.setAttribute('aria-label', isPlaying ? 'Пауза' : 'Воспроизвести');
+        }
+
+        function showPlayerError(message) {
+            console.error('[Wensy player]', message, audio.error || '');
+            trackArtist.textContent = message;
+            setPlayButton(false);
+        }
+
+        // Ошибки теперь видны прямо в био, а не только в консоли.
+        audio.addEventListener('error', () => {
+            const mediaError = audio.error;
+            let message = 'Не удалось загрузить song.mp3';
+            if (mediaError) {
+                if (mediaError.code === 2) message = 'Ошибка сети при загрузке песни';
+                if (mediaError.code === 3) message = 'Файл песни повреждён или имеет неподдерживаемый формат';
+                if (mediaError.code === 4) message = 'Формат песни не поддерживается или файл недоступен';
+            }
+            showPlayerError(message);
         });
 
-        // 2. ВЫБОР ФАЙЛА ВРУЧНУЮ
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            audio.src = URL.createObjectURL(file);
-            trackTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
-            trackArtist.textContent = "Локальный файл";
-            
-            audio.load();
-            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-
-        // 3. КЛИК ПО PLAY
-        playPauseBtn.addEventListener('click', () => {
-            if (audio.paused) {
-                // Пытаемся играть. Если файл битый или его нет, ничего не произойдет.
-                audio.play().then(() => {
-                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                }).catch(err => {
-                    console.log("Ошибка воспроизведения (файл не найден или заблокирован браузером):", err);
-                    // Кнопка не меняется, проводник не открывается
-                });
-            } else {
-                audio.pause();
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        audio.addEventListener('playing', () => {
+            setPlayButton(true);
+            if (trackArtist.textContent.includes('Ошибка') ||
+                trackArtist.textContent.includes('Не удалось') ||
+                trackArtist.textContent.includes('Файл песни') ||
+                trackArtist.textContent.includes('Формат песни')) {
+                trackArtist.textContent = 'Ежанутый';
             }
         });
 
-        // Сброс кнопки при завершении песни
-        audio.addEventListener('ended', () => {
-            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        audio.addEventListener('pause', () => setPlayButton(false));
+        audio.addEventListener('ended', () => setPlayButton(false));
+
+        trackInfoClickable.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            if (localObjectUrl) URL.revokeObjectURL(localObjectUrl);
+            localObjectUrl = URL.createObjectURL(file);
+            audio.src = localObjectUrl;
+            trackTitle.textContent = file.name.replace(/\.[^/.]+$/, '');
+            trackArtist.textContent = 'Локальный файл';
+            audio.load();
+
+            audio.play().catch((error) => {
+                console.error('[Wensy player] Не удалось воспроизвести выбранный файл:', error);
+                showPlayerError('Не удалось воспроизвести файл. Проверь формат аудио');
+            });
         });
 
-        // Громкость и мьют
-        volumeSlider.addEventListener('input', (e) => {
-            audio.volume = e.target.value;
+        playPauseBtn.addEventListener('click', async () => {
+            if (!audio.paused) {
+                audio.pause();
+                return;
+            }
+
+            // Если загрузка ещё не началась, запускаем её заново.
+            if (audio.networkState === HTMLMediaElement.NETWORK_EMPTY) {
+                audio.load();
+            }
+
+            try {
+                await audio.play();
+            } catch (error) {
+                console.error('[Wensy player] Ошибка audio.play():', error);
+
+                if (error.name === 'NotAllowedError') {
+                    showPlayerError('Браузер заблокировал запуск звука. Нажми Play ещё раз');
+                } else if (error.name === 'NotSupportedError') {
+                    showPlayerError('Браузер не поддерживает этот аудиофайл');
+                } else {
+                    showPlayerError('Музыка не загрузилась. Проверь доступность song.mp3');
+                }
+            }
         });
 
-        let isMuted = false;
+        volumeSlider.addEventListener('input', () => {
+            audio.volume = Number(volumeSlider.value);
+            if (audio.volume > 0 && audio.muted) {
+                audio.muted = false;
+                isMuted = false;
+                muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            }
+        });
+
         muteBtn.addEventListener('click', () => {
             isMuted = !isMuted;
             audio.muted = isMuted;
-            muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+            muteBtn.innerHTML = isMuted
+                ? '<i class="fas fa-volume-mute"></i>'
+                : '<i class="fas fa-volume-up"></i>';
+            muteBtn.title = isMuted ? 'Включить звук' : 'Выключить звук';
         });
+
     </script>
 </body>
 </html>
