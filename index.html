@@ -146,6 +146,10 @@
         }
         .play-btn:hover { transform: scale(1.1); box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5); }
 
+        /* Крутящийся спиннер для загрузки */
+        .play-btn.loading i { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .track-info { flex-grow: 1; text-align: left; overflow: hidden; z-index: 2; }
         .track-title { 
             color: #fff; font-size: 13px; font-weight: 600; 
@@ -229,7 +233,7 @@
                 
                 <button class="play-btn" id="playPauseBtn"><i class="fas fa-play"></i></button>
                 
-                <div class="track-info" id="trackInfoClickable" title="Нажмите, чтобы выбрать песню вручную">
+                <div class="track-info" id="trackInfoClickable" title="Нажмите, чтобы выбрать другую песню вручную">
                     <div class="track-title" id="trackTitle">История</div>
                     <div class="track-artist" id="trackArtist">Ежанутый</div>
                 </div>
@@ -239,8 +243,8 @@
                     <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 </div>
                 
-                <!-- ПРЯМАЯ ССЫЛКА НА GITHUB -->
-                <audio id="audioPlayer" src="https://raw.githubusercontent.com/Wensyyy245/wensybio.github.io/main/song.mp3" preload="auto"></audio>
+                <!-- ССЫЛКА НА ПЕСНЮ С GITHUB -->
+                <audio id="audioPlayer" src="https://raw.githubusercontent.com/Wensyyy245/wensybio.github.io/main/song.mp3" preload="metadata"></audio>
             </div>
 
             <div class="social-links">
@@ -323,7 +327,7 @@
             canvas.width = width; canvas.height = height;
         });
 
-        // --- УМНЫЙ ПЛЕЕР ---
+        // --- ПЛЕЕР ---
         const audio = document.getElementById('audioPlayer');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const trackTitle = document.getElementById('trackTitle');
@@ -333,47 +337,61 @@
         const fileInput = document.getElementById('fileInput');
         const trackInfoClickable = document.getElementById('trackInfoClickable');
 
-        // Клик по тексту открывает проводник (для ручного выбора)
+        // 1. КЛИК ПО ТЕКСТУ -> ВЫБОР ФАЙЛА ВРУЧНУЮ
         trackInfoClickable.addEventListener('click', () => {
             fileInput.click();
         });
 
-        // Выбор файла
+        // 2. ВЫБОР ФАЙЛА ВРУЧНУЮ
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            
             audio.src = URL.createObjectURL(file);
             trackTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
             trackArtist.textContent = "Локальный файл";
+            
             audio.load();
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
-        // Кнопка Play (Больше не вызывает проводник)
+        // 3. КЛИК ПО PLAY (ЗАГРУЗКА И ВОСПРОИЗВЕДЕНИЕ)
         playPauseBtn.addEventListener('click', () => {
+            // Если на паузе
             if (audio.paused) {
+                // Показываем спиннер загрузки (крутящуюся иконку)
+                playPauseBtn.classList.add('loading');
+                playPauseBtn.innerHTML = '<i class="fas fa-spinner"></i>';
+
+                // Пытаемся играть
                 audio.play().then(() => {
+                    // Успех: убираем спиннер, ставим паузу
+                    playPauseBtn.classList.remove('loading');
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 }).catch(err => {
-                    console.log("Ошибка воспроизведения (возможно, файл не найден):", err);
+                    // Ошибка (файла нет или браузер заблокировал)
+                    playPauseBtn.classList.remove('loading');
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    console.log("Ошибка загрузки аудио. Проверьте файл song.mp3 на GitHub. Детали:", err);
                 });
-            } else {
+            } 
+            // Если играет
+            else {
                 audio.pause();
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
             }
         });
 
-        // Возврат кнопки Play по окончании
+        // Сброс кнопки при завершении песни
         audio.addEventListener('ended', () => {
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
-        // Громкость
+        // Громкость и мьют
         volumeSlider.addEventListener('input', (e) => {
             audio.volume = e.target.value;
         });
 
-        // Мьют
         let isMuted = false;
         muteBtn.addEventListener('click', () => {
             isMuted = !isMuted;
