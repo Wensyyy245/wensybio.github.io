@@ -19,7 +19,6 @@
             overflow: hidden;
         }
 
-        /* Фон и снег */
         #bg {
             position: fixed; inset: 0; z-index: 0;
             background: url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2000&auto=format&fit=crop') center/cover;
@@ -29,7 +28,6 @@
         @keyframes bgChange { 50% { filter: blur(6px) brightness(0.4) hue-rotate(30deg); } }
         #snow { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-        /* Карточка */
         .card {
             position: relative; z-index: 2;
             width: 100%; max-width: 500px;
@@ -46,7 +44,6 @@
         }
         @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Аватарка */
         .avatar-box {
             position: relative; width: 120px; height: 120px; margin: 0 auto 20px;
         }
@@ -63,7 +60,6 @@
             background: #1a1a2e; z-index: 2; display: block;
         }
 
-        /* Текст */
         .nick {
             font-family: 'Unbounded', sans-serif; font-size: 42px; font-weight: 700;
             background: linear-gradient(90deg, #e879f9, #22d3ee, #e879f9);
@@ -74,7 +70,6 @@
         .bio { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 25px; line-height: 1.5; }
         .bio span { color: #22d3ee; font-weight: 600; }
 
-        /* Статус */
         .status {
             display: inline-flex; align-items: center; gap: 12px;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -88,7 +83,6 @@
         .status-text b { display: block; font-size: 13px; }
         .status-text i { font-size: 11px; color: #22c55e; }
 
-        /* Плеер */
         .player {
             display: flex; align-items: center; gap: 15px;
             background: rgba(0,0,0,0.3); padding: 12px 15px; border-radius: 14px;
@@ -110,7 +104,6 @@
         .volume { width: 60px; accent-color: #22d3ee; cursor: pointer; }
         #fileInput { display: none; }
 
-        /* Соцсети */
         .socials { display: flex; justify-content: center; gap: 25px; }
         .socials a { color: rgba(255,255,255,0.5); font-size: 24px; transition: 0.3s; }
         .socials a:hover { color: #fff; transform: translateY(-5px) scale(1.2); text-shadow: 0 0 15px #22d3ee; }
@@ -146,21 +139,19 @@
         </div>
 
         <div class="player">
-            <!-- Скрытый инпут для выбора файла с компа (если файла song.mp3 нет) -->
             <input type="file" id="fileInput" accept="audio/*">
             
             <button class="play-btn" id="playBtn"><i class="fas fa-play"></i></button>
             
-            <!-- Клик по инфо открывает выбор файла -->
-            <div class="track-info" id="trackInfo">
-                <div class="track-title" id="title">Загрузка...</div>
-                <div class="track-artist" id="artist">Неизвестный</div>
+            <div class="track-info" id="trackInfo" title="Нажмите, чтобы выбрать песню">
+                <div class="track-title" id="title">История</div>
+                <div class="track-artist" id="artist">Ежанутый</div>
             </div>
             
             <input type="range" class="volume" id="vol" min="0" max="1" step="0.1" value="0.5">
             
-            <!-- ВАЖНО: Здесь должен быть файл song.mp3 в репозитории -->
-            <audio id="audio" src="song.mp3"></audio>
+            <!-- ВАЖНО: Убедитесь, что файл называется song.mp3 и лежит рядом с index.html -->
+            <audio id="audio" src="song.mp3" preload="auto"></audio>
         </div>
 
         <div class="socials">
@@ -195,43 +186,53 @@
         const fileInput = document.getElementById('fileInput');
         const trackInfo = document.getElementById('trackInfo');
 
-        // Принудительно ставим красивое название для файла song.mp3
-        title.textContent = "История";
-        artist.textContent = "Ежанутый";
-
-        // Обработка ошибки (если файла нет на GitHub)
+        // Проверка: если браузер не может загрузить song.mp3, меняем текст
         audio.addEventListener('error', () => {
             title.textContent = "Файл не найден";
             artist.textContent = "Нажмите сюда, чтобы выбрать";
-            playBtn.style.opacity = "0.5";
         });
 
-        // Клик по названию -> открываем проводник (ручной выбор файла)
+        // Клик по тексту -> выбор файла с компьютера
         trackInfo.onclick = () => fileInput.click();
 
+        // Выбор файла вручную
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if(!file) return;
             audio.src = URL.createObjectURL(file);
             title.textContent = file.name.replace(/\.[^/.]+$/, "");
-            artist.textContent = "Выбранный файл";
-            playBtn.style.opacity = "1";
-            audio.play();
-            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            artist.textContent = "Локальный файл";
+            // Сбрасываем кнопку в исходное состояние перед игрой
+            playBtn.innerHTML = '<i class="fas fa-play"></i>'; 
+            audio.load();
         };
 
         // Кнопка Play / Pause
         playBtn.onclick = () => {
-            if (audio.src === "" || audio.src.endsWith('song.mp3') && audio.error) {
+            // Если файл не найден (ошибка загрузки), принудительно открываем выбор файла
+            if (audio.error) {
                 fileInput.click();
                 return;
             }
-            if(audio.paused) { 
-                audio.play().then(() => playBtn.innerHTML = '<i class="fas fa-pause"></i>').catch(() => fileInput.click()); 
-            } else { 
-                audio.pause(); 
-                playBtn.innerHTML = '<i class="fas fa-play"></i>'; 
+
+            if (audio.paused) {
+                // Используем промис (обещание) для обработки ошибок
+                audio.play().then(() => {
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }).catch((error) => {
+                    // Если браузер заблокировал звук или файла нет
+                    console.log("Ошибка воспроизведения:", error);
+                    fileInput.click();
+                });
+            } else {
+                audio.pause();
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
             }
+        };
+
+        // Событие окончания песни (возвращаем кнопку play)
+        audio.onended = () => {
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
         };
 
         // Громкость
