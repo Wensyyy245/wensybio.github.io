@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wensy</title>
-    <!-- Защита от кэша -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -224,13 +223,13 @@
                 </div>
             </div>
 
-            <!-- ПЛЕЕР С ПРЯМОЙ ССЫЛКОЙ НА GITHUB -->
+            <!-- ПЛЕЕР -->
             <div class="music-player">
                 <input type="file" id="fileInput" accept="audio/*">
                 
                 <button class="play-btn" id="playPauseBtn"><i class="fas fa-play"></i></button>
                 
-                <div class="track-info" id="trackInfoClickable" title="Нажмите, чтобы выбрать песню">
+                <div class="track-info" id="trackInfoClickable" title="Нажмите, чтобы выбрать песню вручную">
                     <div class="track-title" id="trackTitle">История</div>
                     <div class="track-artist" id="trackArtist">Ежанутый</div>
                 </div>
@@ -240,7 +239,7 @@
                     <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 </div>
                 
-                <!-- ВОТ ЗДЕСЬ МАГИЯ: ПРЯМАЯ RAW ССЫЛКА НА ВАШ ФАЙЛ -->
+                <!-- ПРЯМАЯ ССЫЛКА НА GITHUB -->
                 <audio id="audioPlayer" src="https://raw.githubusercontent.com/Wensyyy245/wensybio.github.io/main/song.mp3" preload="auto"></audio>
             </div>
 
@@ -258,7 +257,7 @@
     </div>
 
     <script>
-        // --- РЕАЛЬНЫЕ ПРОСМОТРЫ ---
+        // --- СЧЕТЧИК ПРОСМОТРОВ ---
         async function fetchViews() {
             try {
                 const response = await fetch('https://api.counterapi.dev/v1/wensy-profile-2024/views/up');
@@ -270,7 +269,7 @@
         }
         fetchViews();
 
-        // --- СМЕНА ФОНА И СНЕГ ---
+        // --- ФОН И СНЕГ ---
         const bgContainer = document.getElementById('bg-container');
         const backgrounds = [
             'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2000&auto=format&fit=crop',
@@ -334,59 +333,29 @@
         const fileInput = document.getElementById('fileInput');
         const trackInfoClickable = document.getElementById('trackInfoClickable');
 
-        function parseFileName(fullString) {
-            if (!fullString) return { artist: "Неизвестный", title: "Без названия" };
-            let fileName = fullString.split('/').pop().split('\\').pop();
-            fileName = fileName.replace(/\.[^/.]+$/, ""); 
-            fileName = fileName.replace(/_/g, ' ');
-            try { fileName = decodeURIComponent(fileName); } catch(e) {}
-            if (fileName.includes(' - ')) {
-                const parts = fileName.split(' - ');
-                return { artist: parts[0].trim(), title: parts.slice(1).join(' - ').trim() };
-            } else {
-                return { artist: "Неизвестный исполнитель", title: fileName };
-            }
-        }
-
-        // Ошибка загрузки (если ссылка битая)
-        audio.addEventListener('error', () => {
-            trackTitle.textContent = "Нажмите сюда, чтобы выбрать";
-            trackArtist.textContent = "Файл не найден";
-            playPauseBtn.style.opacity = "0.5";
-        });
-
+        // Клик по тексту открывает проводник (для ручного выбора)
         trackInfoClickable.addEventListener('click', () => {
             fileInput.click();
         });
 
+        // Выбор файла
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
-            const fileURL = URL.createObjectURL(file);
-            audio.src = fileURL;
+            audio.src = URL.createObjectURL(file);
+            trackTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
+            trackArtist.textContent = "Локальный файл";
             audio.load();
-
-            const trackData = parseFileName(file.name);
-            trackTitle.textContent = trackData.title;
-            trackArtist.textContent = trackData.artist;
-
-            playPauseBtn.style.opacity = "1";
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
+        // Кнопка Play (Больше не вызывает проводник)
         playPauseBtn.addEventListener('click', () => {
-            if (audio.error) {
-                fileInput.click();
-                return;
-            }
-
             if (audio.paused) {
                 audio.play().then(() => {
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 }).catch(err => {
-                    console.log("Ошибка автоплея:", err);
-                    fileInput.click(); 
+                    console.log("Ошибка воспроизведения (возможно, файл не найден):", err);
                 });
             } else {
                 audio.pause();
@@ -394,14 +363,17 @@
             }
         });
 
+        // Возврат кнопки Play по окончании
         audio.addEventListener('ended', () => {
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
+        // Громкость
         volumeSlider.addEventListener('input', (e) => {
             audio.volume = e.target.value;
         });
 
+        // Мьют
         let isMuted = false;
         muteBtn.addEventListener('click', () => {
             isMuted = !isMuted;
