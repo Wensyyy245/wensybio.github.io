@@ -94,7 +94,8 @@
                     <i class="fas fa-volume-down" style="color:#aaa; font-size:12px;"></i>
                     <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 </div>
-                <audio id="audioPlayer" src="https://raw.githubusercontent.com/Wensyyy245/wensybio.github.io/main/song.mp3" preload="auto"></audio>
+                <!-- НОВАЯ ССЫЛКА НА ПЕСНЮ С CATBOX -->
+                <audio id="audioPlayer" src="https://files.catbox.moe/w7krxg.mp3" preload="auto"></audio>
             </div>
 
             <div class="social-links">
@@ -152,7 +153,7 @@
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
-        // Обработка ошибки загрузки с сервера (если GitHub не отдаёт файл)
+        // Обработка ошибки загрузки с сервера
         audio.addEventListener('error', () => {
             trackTitle.textContent = "Файл не найден";
             trackArtist.textContent = "Нажмите сюда, чтобы выбрать";
@@ -160,7 +161,6 @@
 
         // Клик по кнопке Play
         playPauseBtn.addEventListener('click', () => {
-            // Если браузер не видит файл на сервере, предлагаем выбрать с компа
             if (audio.error) {
                 fileInput.click();
                 return;
@@ -171,7 +171,6 @@
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 }).catch(err => {
                     console.log("Ошибка:", err);
-                    // Если браузер заблокировал или файл не загрузился, предлагаем выбрать локально
                     fileInput.click();
                 });
             } else {
