@@ -224,7 +224,7 @@
                 </div>
             </div>
 
-            <!-- ПЛЕЕР -->
+            <!-- ПЛЕЕР С ПРЯМОЙ ССЫЛКОЙ НА GITHUB -->
             <div class="music-player">
                 <input type="file" id="fileInput" accept="audio/*">
                 
@@ -240,12 +240,8 @@
                     <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 </div>
                 
-                <!-- АУДИО: теперь с несколькими источниками для гарантии на GitHub -->
-                <audio id="audioPlayer" preload="auto">
-                    <source src="song.mp3" type="audio/mpeg">
-                    <source src="Song.mp3" type="audio/mpeg">
-                    <source src="./song.mp3" type="audio/mpeg">
-                </audio>
+                <!-- ВОТ ЗДЕСЬ МАГИЯ: ПРЯМАЯ RAW ССЫЛКА НА ВАШ ФАЙЛ -->
+                <audio id="audioPlayer" src="https://raw.githubusercontent.com/Wensyyy245/wensybio.github.io/main/song.mp3" preload="auto"></audio>
             </div>
 
             <div class="social-links">
@@ -328,7 +324,7 @@
             canvas.width = width; canvas.height = height;
         });
 
-        // --- УМНЫЙ ПЛЕЕР (без вырезания кода) ---
+        // --- УМНЫЙ ПЛЕЕР ---
         const audio = document.getElementById('audioPlayer');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const trackTitle = document.getElementById('trackTitle');
@@ -338,7 +334,6 @@
         const fileInput = document.getElementById('fileInput');
         const trackInfoClickable = document.getElementById('trackInfoClickable');
 
-        // Парсер имени файла (для ручного выбора)
         function parseFileName(fullString) {
             if (!fullString) return { artist: "Неизвестный", title: "Без названия" };
             let fileName = fullString.split('/').pop().split('\\').pop();
@@ -353,23 +348,17 @@
             }
         }
 
-        // Инициализация названия (если играет song.mp3)
-        trackTitle.textContent = "История";
-        trackArtist.textContent = "Ежанутый";
-
-        // Ошибка загрузки файла с сервера
+        // Ошибка загрузки (если ссылка битая)
         audio.addEventListener('error', () => {
             trackTitle.textContent = "Нажмите сюда, чтобы выбрать";
             trackArtist.textContent = "Файл не найден";
             playPauseBtn.style.opacity = "0.5";
         });
 
-        // Клик по инфо открывает выбор файла (на случай, если не находит)
         trackInfoClickable.addEventListener('click', () => {
             fileInput.click();
         });
 
-        // Ручной выбор файла
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -386,7 +375,6 @@
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
-        // Play / Pause
         playPauseBtn.addEventListener('click', () => {
             if (audio.error) {
                 fileInput.click();
@@ -398,7 +386,7 @@
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 }).catch(err => {
                     console.log("Ошибка автоплея:", err);
-                    fileInput.click(); // Если браузер блокирует, открываем выбор файла
+                    fileInput.click(); 
                 });
             } else {
                 audio.pause();
@@ -410,7 +398,6 @@
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         });
 
-        // Громкость и мьют
         volumeSlider.addEventListener('input', (e) => {
             audio.volume = e.target.value;
         });
