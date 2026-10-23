@@ -213,8 +213,8 @@
             <div class="avatar-wrapper">
                 <div class="avatar-glow"></div>
                 <div class="avatar-fallback">W</div>
-                <!-- Вставьте путь к вашей картинке (любой формат) -->
-                <img src="avatar.png" alt="Avatar" class="avatar-img" onerror="this.style.display='none'">
+                <!-- ИЗМЕНЕНО: Теперь ищем avatar.jpg -->
+                <img src="avatar.jpg" alt="Avatar" class="avatar-img" onerror="this.style.display='none'">
             </div>
 
             <div class="nickname">Wensy</div>
@@ -245,8 +245,8 @@
                     <i class="fas fa-volume-down" style="color:#aaa; font-size:12px;"></i>
                     <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 </div>
-                <!-- ВАШ ФАЙЛ: Ежанутый - История.mp3 -->
-                <audio id="audioPlayer" src="Ежанутый - История.mp3"></audio>
+                <!-- ИЗМЕНЕНО: Теперь ищем song.mp3 (без пробелов и русских букв, чтобы GitHub его видел) -->
+                <audio id="audioPlayer" src="song.mp3"></audio>
             </div>
 
             <div class="social-links">
@@ -335,7 +335,14 @@
         const fileInput = document.getElementById('fileInput');
         const trackInfoClickable = document.getElementById('trackInfoClickable');
 
+        // Парсер имени файла. Теперь мы "обманываем" его, 
+        // чтобы он показывал красивое название, даже если файл называется song.mp3
         function parseFileName(fullString) {
+            // Если файл называется song.mp3, принудительно выводим нужные данные
+            if (fullString.includes('song.mp3')) {
+                return { artist: "Ежанутый", title: "История" };
+            }
+            
             if (!fullString) return { artist: "Неизвестный исполнитель", title: "Без названия" };
             let fileName = fullString.split('/').pop().split('\\').pop();
             fileName = fileName.replace(/\.[^/.]+$/, "");
@@ -355,18 +362,18 @@
             trackTitle.textContent = title;
         }
 
-        // Инициализация: берем имя из src="Ежанутый - История.mp3"
+        // Инициализация
         const initialData = parseFileName(audio.getAttribute('src'));
         updateTrackInfo(initialData.artist, initialData.title);
 
-        // Обработка ошибки, если файла нет
+        // Обработка ошибки
         audio.addEventListener('error', () => {
             updateTrackInfo("Файл не найден", "Нажмите сюда, чтобы выбрать");
             playPauseBtn.style.opacity = "0.5";
             playPauseBtn.style.pointerEvents = "none";
         });
 
-        // Клик по инфо открывает выбор файла (на случай, если захотите сменить трек)
+        // Клик по инфо открывает выбор файла
         trackInfoClickable.addEventListener('click', () => {
             fileInput.click();
         });
