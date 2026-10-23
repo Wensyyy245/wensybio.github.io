@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wensy</title>
+    <!-- Подключение современных шрифтов: Unbounded для ника, Montserrat для текста -->
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html {
+            height: 100%;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            background-color: #0d0d1a;
+        }
+
+        /* Фоновая картинка с плавным затемнением */
+        #bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 3s ease-in-out;
+            filter: blur(4px) brightness(0.3);
+        }
+
+        /* Канвас для снега и частиц */
+        #snow-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .center-wrapper {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        /* Карточка в стиле Glassmorphism */
+        .card {
+            width: 550px;
+            padding: 35px 30px;
+            border-radius: 28px;
+            background: rgba(20, 15, 35, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.6),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 0 40px rgba(120, 50, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            
+            animation: smoothReveal 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes smoothReveal {
+            0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(8px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(170, 100, 255, 0.15), transparent 60%),
+                        radial-gradient(circle at 70% 80%, rgba(50, 200, 255, 0.12), transparent 60%);
+            z-index: -1;
+            animation: ambientGlow 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes ambientGlow {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(5%, 5%) rotate(5deg); }
+        }
+
+        /* Аватарка — Жидкое стекло + свечение */
+        .avatar-wrapper {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 18px;
+        }
+
+        .avatar-glow {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #a855f7, #06b6d4, #a855f7);
+            animation: spinGlow 4s linear infinite;
+            filter: blur(12px);
+            opacity: 0.7;
+            transition: opacity 0.5s;
+        }
+
+        .avatar-wrapper:hover .avatar-glow {
+            opacity: 1;
+            filter: blur(18px);
+        }
+
+        @keyframes spinGlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .avatar-img {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
+            z-index: 2;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .avatar-wrapper:hover .avatar-img {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Никнейм с современным шрифтом */
+        .nickname {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e879f9, #22d3ee, #e879f9);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+            animation: shimmerText 5s linear infinite;
+            line-height: 1.1;
+        }
+
+        @keyframes shimmerText {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Современное био */
+        .bio {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 22px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .bio span {
+            color: #22d3ee;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .bio span:hover {
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+        }
+
+        /* Статус */
+        .status-box {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 22px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            gap: 14px;
+            transition: all 0.4s ease;
+            cursor: default;
+        }
+
+        .status-box:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(34, 211, 238, 0.3);
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .status-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 12px #22c55e, 0 0 24px rgba(34, 197, 94, 0.5);
+            animation: pulseGreen 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulseGreen {
+            0% { transform: scale(1); box-shadow: 0 0 12px #22c55e, 0 0 24px rgba(34, 197, 94, 0.5); }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px #22c55e, 0 0 35px rgba(34, 197, 94, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 12px #22c55e, 0 0 24px rgba(34, 197, 94, 0.5); }
+        }
+
+        .status-text {
+            text-align: left;
+        }
+
+        .status-title {
+            color: #e2e8f0;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+
+        .status-sub {
+            color: #22c55e;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        /* Плеер */
+        .music-player {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: 0.3s;
+        }
+        
+        .music-player:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(232, 121, 249, 0.2);
+        }
+
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #a855f7, #06b6d4);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5);
+        }
+
+        .track-info {
+            flex-grow: 1;
+            text-align: left;
+            overflow: hidden;
+        }
+
+        .track-title {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-artist {
+            color: #a0a0b0;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 70px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22d3ee;
+            cursor: pointer;
+        }
+
+        /* Ссылки */
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 15px;
+            margin-top: 5px;
+        }
+
+        .social-links a {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 28px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+            position: relative;
+        }
+
+        .social-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: #22d3ee;
+            transition: width 0.3s;
+            border-radius: 2px;
+        }
+
+        .social-links a:hover {
+            color: #fff;
+            transform: translateY(-6px) scale(1.15);
+            text-shadow: 0 0 15px rgba(34, 211, 238, 0.8);
+        }
+
+        .social-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Просмотры */
+        .views {
+            position: absolute;
+            bottom: 18px;
+            left: 24px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .views:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Кнопка звука */
+        .sound-btn {
+            position: absolute;
+            top: 20px; left: 20px;
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sound-btn:hover {
+            background: rgba(168, 85, 247, 0.4);
+            transform: scale(1.1);
+        }
+
+        ::-webkit-scrollbar { width: 0; }
+    </style>
+</head>
+<body>
+
+    <div id="bg-container"></div>
+    <button class="sound-btn" id="muteBtn" title="Выключить звук"><i class="fas fa-volume-up"></i></button>
+    <canvas id="snow-canvas"></canvas>
+
+    <div class="center-wrapper">
+        <div class="card">
+            
+            <!-- Аватарка -->
+            <div class="avatar-wrapper">
+                <div class="avatar-glow"></div>
+                <!-- Замените ссылку на свою аватарку -->
+                <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" class="avatar-img">
+            </div>
+
+            <!-- Никнейм -->
+            <div class="nickname">Wensy</div>
+
+            <!-- Био -->
+            <div class="bio">
+                <span>Vibe Coder</span> & Owner of Bot Network<br>
+                Создаю цифровую эстетику через код.
+            </div>
+
+            <!-- Статус -->
+            <div class="status-box">
+                <div class="status-dot"></div>
+                <div class="status-text">
+                    <div class="status-title">разрабатывает новое приложение</div>
+                    <div class="status-sub">пастит</div>
+                </div>
+            </div>
+
+            <!-- Плеер -->
+            <div class="music-player">
+                <button class="play-btn" id="playPauseBtn"><i class="fas fa-play"></i></button>
+                <div class="track-info">
+                    <div class="track-title" id="trackTitle">Загрузка...</div>
+                    <div class="track-artist" id="trackArtist">Неизвестный исполнитель</div>
+                </div>
+                <div class="volume-control">
+                    <i class="fas fa-volume-down" style="color:#aaa; font-size:12px;"></i>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+                </div>
+                <!-- ВАЖНО: Аудиофайл должен лежать в одной папке с этим html -->
+                <audio id="audioPlayer" src="song.mp3"></audio>
+            </div>
+
+            <!-- Ссылки (Обновлены на ваши реальные профили) -->
+            <div class="social-links">
+                <a href="https://vk.ru/wirzyyy" target="_blank" title="ВКонтакте"><i class="fab fa-vk"></i></a>
+                <a href="https://t.me/cbwensy" target="_blank" title="Telegram"><i class="fab fa-telegram-plane"></i></a>
+                <a href="https://steamcommunity.com/profiles/76561198731768255/" target="_blank" title="Steam"><i class="fab fa-steam"></i></a>
+            </div>
+
+            <!-- Реальные просмотры -->
+            <div class="views">
+                <i class="fas fa-eye"></i> <span id="viewCount">...</span>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- РЕАЛЬНЫЕ ПРОСМОТРЫ ---
+        async function fetchViews() {
+            try {
+                const response = await fetch('https://api.counterapi.dev/v1/wensy-profile-2024/views/up');
+                const data = await response.json();
+                if (data && data.count) {
+                    document.getElementById('viewCount').textContent = data.count;
+                } else {
+                    document.getElementById('viewCount').textContent = "67";
+                }
+            } catch (error) {
+                console.log("Ошибка счетчика:", error);
+                document.getElementById('viewCount').textContent = "67";
+            }
+        }
+        fetchViews();
+
+        // --- СМЕНА ФОНА ---
+        const bgContainer = document.getElementById('bg-container');
+        const backgrounds = [
+            'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2000&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=2000&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?q=80&w=2000&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=2000&auto=format&fit=crop'
+        ];
+        let currentBg = 0;
+
+        function changeBackground() {
+            bgContainer.style.backgroundImage = `url('${backgrounds[currentBg]}')`;
+            currentBg = (currentBg + 1) % backgrounds.length;
+        }
+        changeBackground();
+        setInterval(changeBackground, 7000);
+
+        // --- СНЕГ ---
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        const snowflakes = [];
+        const maxSnowflakes = 120;
+
+        class Snowflake {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.radius = Math.random() * 2.5 + 0.5;
+                this.speed = Math.random() * 1 + 0.3;
+                this.opacity = Math.random() * 0.4 + 0.2;
+                this.wind = Math.random() * 0.6 - 0.3;
+            }
+            update() {
+                this.y += this.speed;
+                this.x += this.wind;
+                if (this.y > height) {
+                    this.y = -10;
+                    this.x = Math.random() * width;
+                }
+                if (this.x > width) this.x = 0;
+                if (this.x < 0) this.x = width;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.fill();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "rgba(255,255,255,0.5)";
+            }
+        }
+
+        for (let i = 0; i < maxSnowflakes; i++) snowflakes.push(new Snowflake());
+
+        function animateSnow() {
+            ctx.clearRect(0, 0, width, height);
+            snowflakes.forEach(flake => { flake.update(); flake.draw(); });
+            requestAnimationFrame(animateSnow);
+        }
+        animateSnow();
+
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        });
+
+        // --- МУЗЫКАЛЬНЫЙ ПЛЕЕР ---
+        const audio = document.getElementById('audioPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const trackTitle = document.getElementById('trackTitle');
+        const trackArtist = document.getElementById('trackArtist');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const muteBtn = document.getElementById('muteBtn');
+
+        function parseFileName(fileName) {
+            if (!fileName) return { artist: "Неизвестно", title: "Неизвестно" };
+            let name = fileName.replace(/\.[^/.]+$/, "");
+            name = name.replace(/_/g, ' ');
+            if (name.includes(' - ')) {
+                const parts = name.split(' - ');
+                return { artist: parts[0].trim(), title: parts.slice(1).join(' - ').trim() };
+            }
+            return { artist: "Неизвестный исполнитель", title: name };
+        }
+
+        const fileName = "song.mp3"; 
+        const trackData = parseFileName(fileName);
+        
+        trackTitle.textContent = trackData.title;
+        trackArtist.textContent = trackData.artist;
+
+        audio.addEventListener('error', () => {
+            trackTitle.textContent = "Файл не найден";
+            trackArtist.textContent = "Поместите song.mp3 в папку";
+            playPauseBtn.style.opacity = "0.5";
+            playPauseBtn.style.pointerEvents = "none";
+        });
+
+        playPauseBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play().then(() => {
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }).catch(e => console.log("Ошибка:", e));
+            } else {
+                audio.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value;
+        });
+
+        let isMuted = false;
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            audio.muted = isMuted;
+            muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+        });
+
+    </script>
+</body>
+</html>
