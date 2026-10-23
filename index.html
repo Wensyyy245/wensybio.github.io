@@ -229,7 +229,7 @@
                 
                 <button class="play-btn" id="playPauseBtn"><i class="fas fa-play"></i></button>
                 
-                <div class="track-info" id="trackInfoClickable" title="Нажмите, чтобы выбрать песню вручную">
+                <div class="track-info" id="trackInfoClickable" title="Нажмите, чтобы выбрать другую песню">
                     <div class="track-title" id="trackTitle">История</div>
                     <div class="track-artist" id="trackArtist">Ежанутый</div>
                 </div>
@@ -239,8 +239,7 @@
                     <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
                 </div>
                 
-                <!-- НОВАЯ ССЫЛКА НА ПЕСНЮ -->
-                <audio id="audioPlayer" src="https://files.catbox.moe/w7krxg.mp3" preload="auto"></audio>
+                <!-- ТЕГ AUDIO УБРАН, ТЕПЕРЬ ОН СОЗДАЕТСЯ В JS -->
             </div>
 
             <div class="social-links">
@@ -323,8 +322,7 @@
             canvas.width = width; canvas.height = height;
         });
 
-        // --- ПЛЕЕР ---
-        const audio = document.getElementById('audioPlayer');
+        // --- ИСПРАВЛЕННЫЙ ПЛЕЕР ---
         const playPauseBtn = document.getElementById('playPauseBtn');
         const trackTitle = document.getElementById('trackTitle');
         const trackArtist = document.getElementById('trackArtist');
@@ -332,6 +330,12 @@
         const muteBtn = document.getElementById('muteBtn');
         const fileInput = document.getElementById('fileInput');
         const trackInfoClickable = document.getElementById('trackInfoClickable');
+
+        // Создаем аудио-объект прямо в JS с атрибутом crossOrigin (чтобы читать с Catbox)
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.src = "https://files.catbox.moe/w7krxg.mp3";
+        audio.volume = 0.5;
 
         // Клик по тексту вызывает выбор файла
         trackInfoClickable.addEventListener('click', () => fileInput.click());
@@ -353,7 +357,7 @@
                 audio.play().then(() => {
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 }).catch(err => {
-                    console.log("Ошибка:", err);
+                    console.log("Ошибка воспроизведения:", err);
                 });
             } else {
                 audio.pause();
